@@ -9,6 +9,7 @@ library(here)
 library(dplyr)
 library(tidyr)
 library(vroom)
+library(readr)
 
 here::i_am("eval-grades.Rproj")
 ```
@@ -42,10 +43,6 @@ courses |>
 ```
 
 ### Question 3
-
-```{r}
-names(students)
-```
 
 ```{r}
 students <- vroom(here("data", "students.csv"))
@@ -509,6 +506,85 @@ ggplot(data_most_correlated, aes(x = `Historical Archaeology and Antiquarian Stu
 ```
 In this group we can see a clear correlation between the grade obtain in Historical Archeology and in Etiquette and social graces. The higher the grade in one course is the higher it is in the other course. 
 
+### Question 23 
+```{r}
+library(dplyr)
+library(tidyr)
+library(knitr)
+
+# Correction du code pour la Question 23
+student_final_grades <- student_performance_wide |>
+  # 1. Utiliser rowwise() pour que les opérations (comme mean) s'appliquent LIGNE par LIGNE.
+  rowwise() |> 
+  mutate(
+    final_grade = mean(c_across(3:ncol(student_performance_wide)), na.rm = TRUE)
+  ) |>
+  ungroup() |>
+  left_join(students |> select(id, sex), by = "id") |>
+  select(id, group, sex, final_grade) |>
+  arrange(desc(final_grade))
+
+# 2. Afficher les 5 premières lignes
+student_final_grades |>
+  slice_head(n = 5) |>
+  kable(
+    caption = "Top 5 des Étudiants par Note Finale",
+    digits = 2
+  )
+```
+### Question 24 
+Let's do a boxplot since it gives à good idea of the distribution of grades per group. 
+```{r}
+ggplot(student_final_grades, aes(x = as.factor(group), y = final_grade, fill = as.factor(group))) +
+  geom_boxplot() +
+  labs(
+    title = "Distribution de la Note Finale par Groupe d'Étudiants",
+    x = "Groupe",
+    y = "Note Finale (Moyenne des Moyennes de Cours)"
+  ) +
+  scale_y_continuous(limits = c(0, 20)) + # Plafonner l'axe Y à 20
+  theme_minimal(base_size = 14) +
+  theme(legend.position = "none")
+```
+Here we can note that the average is similar between groups. 
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# 1. Calculer la note finale moyenne par groupe et par sexe
+mean_final_grade_by_group_sex <- student_final_grades |>
+  summarise(
+    avg_final_grade = mean(final_grade, na.rm = TRUE),
+    .by = c(group, sex) # Utilisation efficace de .by
+  ) |>
+  # Trier par groupe pour la cohérence
+  arrange(group)
+
+# 2. Créer le graphique de dispersion des moyennes
+ggplot(mean_final_grade_by_group_sex, aes(x = as.factor(group), y = avg_final_grade, color = sex, group = sex)) +
+  
+  # Points pour les moyennes
+  geom_point(size = 3) +
+  
+  # Lignes reliant les moyennes pour chaque sexe (facilite la lecture de l'évolution)
+  geom_line(linewidth = 1) +
+  
+  # Lignes pointillées pour la moyenne générale des notes finales pour référence
+  geom_hline(yintercept = mean(student_final_grades$final_grade, na.rm = TRUE), 
+             linetype = "dashed", color = "darkgrey", linewidth = 1) +
+  
+  labs(
+    title = "Note Finale Moyenne par Groupe et par Sexe",
+    subtitle = "La ligne pointillée montre la moyenne générale de tous les étudiants.",
+    x = "Groupe d'Étudiants",
+    y = "Moyenne de la Note Finale",
+    color = "Sexe"
+  ) +
+  scale_y_continuous(limits = c(0, 20)) +
+  theme_minimal(base_size = 14) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
 
 
 
