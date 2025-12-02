@@ -77,6 +77,48 @@ grades <- read_delim(
 head(grades)
 ```
 
+### Question 5 
+```{r}
+students_factor <- read_delim(here("data", "students.csv"),
+  col_types = cols(
+     sex = col_factor()
+  )
+)
+```
+
+```{r}
+str(students_factor)
+```
+Now that sex is well-encoded let's compute the graphical representation : 
+```{r}
+library(ggplot2)
+students <- students |> 
+  mutate(group = as.factor(group))
+
+ggplot(students, aes(x = group)) +
+  geom_bar(fill = "#1f77b4") +           # bar plot
+  labs(
+    title = "Number of Students per Group",
+    x = "Group",
+    y = "Number of Students"
+  ) +
+  theme_minimal(base_size = 14) 
+```
+### Question 6
+```{r}
+ggplot(students, aes(x = group, fill = sex)) +
+  geom_bar() +
+  labs(
+    title = "Gender Balance per Group",
+    x = "Group",
+    y = "Number of Students",
+    fill = "Sex"
+  ) +
+  theme_minimal(base_size = 14)
+```
+
+
+
 
 
 ## Quarto
