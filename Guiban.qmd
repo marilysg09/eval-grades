@@ -290,52 +290,109 @@ ggplot(grades_by_sex, aes(x = sex, y = total_grades, fill = sex)) +
 ### Question 15
 
 ```{r}
-alchemy_grades <- grades_students |>
-  left_join(courses, by = "course_id") |>           # join to get course names
-  filter(course == "Alchemy and Chemical Engineering") |>  # keep only that course
-  group_by(id, group) |>                            # keep student info
-  summarise(n_grades = n(), .groups = "drop")      # count grades
+library(dplyr)
+library(knitr)
 
-# Show a small extract for Quarto rendering
-alchemy_grades |> 
-  select(id, group, n_grades) |>
-  slice_head(n=10) |> 
-  knitr::kable()
+# 1. Identifier l'ID du cours "Alchemy and Chemical Engineering" (Course ID 4 dans l'exemple)
+course_alchemy_id <- courses |>
+  filter(course == "Alchemy and Chemical Engineering") |>
+  pull(course_id)
+
+# 2. Créer le data frame 'grades_alchemy'
+grades_alchemy <- grades |>
+  # Filtrer uniquement les notes pour le cours d'Alchimie
+  filter(course_id == course_alchemy_id) |>
+  # Joindre avec les étudiants pour obtenir le groupe
+  left_join(students |> select(id, group), by = "id") |>
+  # Compter le nombre de notes par étudiant
+  group_by(id, group) |>
+  summarise(
+    nb_grades_alchemy = n(),
+    .groups = "drop"
+  )
+
+grades_alchemy |>
+  slice_head(n = 5) |>
+  kable(
+    caption = "Extrait du nombre de notes en Alchemy and Chemical Engineering par étudiant"
+  )
 ```
 
 ### Question 16
 
 ```{r}
-grades_distribution <- alchemy_grades |>
-  group_by(n_grades) |>
-  summarise(num_students = n(), .groups = "drop") 
+# 1. Calculer la distribution (compter le nombre d'étudiants par nombre de notes)
+distribution_grades_alchemy <- grades_alchemy |>
+  group_by(nb_grades_alchemy) |>
+  summarise(
+    n_students = n(),
+    .groups = "drop"
+  ) |>
+  # Convertir le nombre de notes en facteur pour un axe X catégoriel propre
+  mutate(
+    nb_grades_alchemy = as.factor(nb_grades_alchemy)
+  )
 
-ggplot(grades_distribution, aes(x = as.factor(n_grades), y = num_students)) +
-  geom_col(fill = "steelblue") +
+# 2. Représentation graphique (Diagramme en colonnes)
+ggplot(distribution_grades_alchemy, aes(x = nb_grades_alchemy, y = n_students)) +
+  geom_col(fill = "#FF9933") +
+  geom_text(aes(label = n_students), vjust = -0.5, size = 4) +
   labs(
-    title = "Distribution of Number of Grades per Student in Alchemy and Chemical Engineering",
-    x = "Number of Grades",
-    y = "Number of Students"
+    title = "Distribution du Nombre de Notes par Étudiant en Alchemy and Chemical Engineering",
+    x = "Nombre de Notes Obtenues",
+    y = "Nombre d'Étudiants"
   ) +
-  theme_minimal(base_size = 14)
+  theme_minimal(base_size = 14) +
+  scale_y_continuous(limits = c(0, max(distribution_grades_alchemy$n_students) * 1.1))
 ```
 
 ### Question 17
 
 ```{r}
-ggplot(alchemy_grades, aes(x = as.factor(group), y = n_grades, fill = as.factor(group))) +
+ggplot(grades_alchemy, aes(x = as.factor(group), y = nb_grades_alchemy, fill = as.factor(group))) +
   geom_boxplot() +
   labs(
-    title = "Number of Grades in Alchemy and Chemical Engineering per Group",
-    x = "Group",
-    y = "Number of Grades",
-    fill = "Group"
+    title = "Nombre de Notes en Alchemy and Chemical Engineering par Groupe",
+    x = "Groupe d'Étudiants",
+    y = "Nombre de Notes Obtenues"
   ) +
-  theme_minimal(base_size = 14) +
-  theme(legend.position = "none")
+  theme_minimal() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 Here it seems that the lowest grade differ but the mean does not seem do differ between each group.
+
+### Question 18 
+```{r}
+# 1. Préparer les données en ajoutant la variable 'sex'
+# Assurez-vous que le data frame 'students' est disponible
+grades_alchemy_sex <- grades_alchemy |>
+  # Joindre par 'id' pour récupérer la colonne 'sex'
+  left_join(students |> select(id, sex), by = "id")
+
+# 2. Représentation graphique : Boxplot Groupé par Sexe
+ggplot(grades_alchemy_sex, aes(x = as.factor(group), y = nb_grades_alchemy, fill = sex)) +
+  # Boxplot avec position_dodge pour séparer les F et les M au sein de chaque groupe X
+  geom_boxplot(position = position_dodge(width = 0.8), alpha = 0.7) +
+  labs(
+    title = "Nombre de Notes en Alchemy and Chemical Engineering : Analyse Groupée par Sexe",
+    x = "Groupe d'Étudiants",
+    y = "Nombre de Notes Obtenues",
+    fill = "Sexe" # La légende est essentielle ici
+  ) +
+  # Assurer que l'axe Y montre les valeurs entières des notes
+  scale_y_continuous(breaks = unique(grades_alchemy_sex$nb_grades_alchemy)) +
+  theme_minimal() +
+  # Rotation des étiquettes pour les 20 groupes
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+here it seems that the first and the last quartile of some groups are higher in some groups than u-in other. For instance the third quartile of group is higher. Further more we can note that there is no significant difference between men and women. Except for group fifteen where the median of the women is lower than the median of the men. 
+Hence we can say that even though it is not that obvious there is a difference for the grades between men and women and by groups. There is a kind of dependency. 
+
+
+
+
 
 ## Quarto
 
