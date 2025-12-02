@@ -548,6 +548,7 @@ ggplot(student_final_grades, aes(x = as.factor(group), y = final_grade, fill = a
 ```
 Here we can note that the average is similar between groups. 
 
+### Question 25 
 ```{r}
 library(ggplot2)
 library(dplyr)
@@ -584,6 +585,65 @@ ggplot(mean_final_grade_by_group_sex, aes(x = as.factor(group), y = avg_final_gr
   scale_y_continuous(limits = c(0, 20)) +
   theme_minimal(base_size = 14) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### Question 26 
+```{r}
+
+# 1. Préparer les données pour le calcul des moyennes de module
+# Revenir au format long des moyennes par étudiant et par cours (avg_grades_per_course_student créé en Q19)
+# et ajouter le module
+grades_modules_avg <- avg_grades_per_course_student |>
+  left_join(courses |> select(course, module), by = "course")
+
+# 2. Calculer la moyenne des moyennes par module
+avg_grade_by_module <- grades_modules_avg |>
+  group_by(id, module) |>
+  summarise(
+    avg_module_grade = mean(avg_grade, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  # Pivoter pour avoir une colonne par module (Module 1 et Module 2)
+  pivot_wider(
+    id_cols = id,
+    names_from = module,
+    values_from = avg_module_grade,
+    names_prefix = "module_"
+  )
+
+# 3. Calculer les conditions de passage et créer le data frame final
+pass_analysis <- student_final_grades |>
+  select(id, group, final_grade) |> # id, group, final_grade (calculé en Q23)
+  
+  # Ajouter les moyennes par module
+  left_join(avg_grade_by_module, by = "id") |>
+  
+  # Identifier le minimum des moyennes de cours (Condition 1)
+  left_join(
+    student_performance_wide |>
+      select(-group) |> # Éviter les colonnes dupliquées
+      rowwise() |>
+      mutate(min_course_avg = min(c_across(-id), na.rm = TRUE)) |>
+      ungroup() |>
+      select(id, min_course_avg),
+    by = "id"
+  ) |>
+  
+  # Créer la variable 'pass'
+  mutate(
+    # Condition 1: Aucune moyenne de cours < 5
+    cond_1_min_5 = min_course_avg >= 5,
+    # Condition 2: Moyenne Module 1 >= 10 ET Moyenne Module 2 >= 10
+    cond_2_module_10 = (module_1 >= 10) & (module_2 >= 10),
+    # Pass = Condition 1 ET Condition 2
+    pass = cond_1_min_5 & cond_2_module_10
+  ) |>
+  select(id, group, final_grade, pass)
+
+# Affichage des 5 premières lignes
+pass_analysis |>
+  slice_head(n = 5) |>
+  knitr::kable(caption = "Extrait de l'Analyse de Réussite (Pass/Fail)")
 ```
 
 
