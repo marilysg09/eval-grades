@@ -223,6 +223,62 @@ ggplot(grades_modules, aes(x = as.factor(group), y = grade, fill = as.factor(gro
 
 ```
 ### Question 13 
+```{r}
+grades_per_student <- grades_students |>
+  filter(!is.na(grade)) |>              # remove missing grades
+  group_by(id, group, sex) |>
+  summarise(n_grades = n(), .groups = "drop")
+
+# Show an extract of the resulting data frame (first 10 rows)
+head(grades_per_student, 10)
+
+# Compute min, max, mean, median
+grades_summary <- grades_per_student |>
+  summarise(
+    min = min(n_grades),
+    max = max(n_grades),
+    mean = mean(n_grades),
+    median = median(n_grades)
+  ) |> 
+  knitr::kable()
+```
+
+### Question 14 
+```{r}
+grades_by_sex <- grades_per_student |>
+  group_by(sex) |>
+  summarise(total_grades = sum(n_grades), .groups = "drop")
+
+# Bar plot
+ggplot(grades_by_sex, aes(x = sex, y = total_grades, fill = sex)) +
+  geom_col() +
+  labs(
+    title = "Total Number of Grades by Sex",
+    x = "Sex",
+    y = "Total Grades",
+    fill = "Sex"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(legend.position = "none")
+```
+### Question 15 
+```{r}
+alchemy_grades <- grades_students |>
+  left_join(courses, by = "course_id") |>           # join to get course names
+  filter(course == "Alchemy and Chemical Engineering") |>  # keep only that course
+  group_by(id, group) |>                            # keep student info
+  summarise(n_grades = n(), .groups = "drop")      # count grades
+
+# Show a small extract for Quarto rendering
+alchemy_grades |> 
+  select(id, group, n_grades) |>
+  slice_head(n=10) |> 
+  knitr::kable()
+```
+### Question 16 
+
+
+### Question 17 
 
 
 
