@@ -3,6 +3,39 @@ title: "Guiban"
 author: "Marilys Guiban"
 format: html
 ---
+```{r}
+library(here)
+library(dplyr)
+library(tidyr)
+library(vroom)
+
+here::i_am("eval-grades.Rproj")
+```
+### Question 1
+```{r}
+courses <- vroom(here("data", "courses.csv"))
+```
+
+### Question 2 
+```{r}
+# Load the necessary library for table formatting
+library(knitr) 
+library(dplyr)
+
+# 1. Prepare the data: Sort and rename columns
+courses |>
+  arrange(course) |> 
+  rename(
+    "course name" = course,
+    "identifier" = course_id,
+    "module" = module,
+    "Number of Exams" = nb_grades
+  ) |>
+  kable(
+    caption = "Course Descriptions and Exam Counts",
+    align = "l"
+  )
+```
 
 
 ## Quarto
