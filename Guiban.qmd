@@ -57,6 +57,25 @@ students |>
 str(students)
 
 ```
+### Question 4 
+```{r}
+gradenaive <- read.csv(here("data", "grades.csv"))
+
+
+grades <- read_delim(
+  here("data", "grades.csv"),
+  delim = ":",    # Correct separator
+  na = "$",       # Convert $ to NA
+  col_types = cols(
+    id = col_integer(),
+    course_id = col_integer(),
+    grade = col_double()
+  )
+)
+
+# Preview the first rows (optional but recommended)
+head(grades)
+```
 
 
 
