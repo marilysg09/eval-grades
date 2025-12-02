@@ -390,6 +390,124 @@ ggplot(grades_alchemy_sex, aes(x = as.factor(group), y = nb_grades_alchemy, fill
 here it seems that the first and the last quartile of some groups are higher in some groups than u-in other. For instance the third quartile of group is higher. Further more we can note that there is no significant difference between men and women. Except for group fifteen where the median of the women is lower than the median of the men. 
 Hence we can say that even though it is not that obvious there is a difference for the grades between men and women and by groups. There is a kind of dependency. 
 
+### Question 19
+```{r}
+library(dplyr)
+library(tidyr)
+library(knitr)
+
+avg_grades_per_course_student <- grades |>
+  filter(!is.na(grade)) |>
+  summarise(
+    avg_grade = mean(grade, na.rm = TRUE),
+    .by = c(id, course_id)
+  ) |>
+  # Joindre les noms de cours et le groupe de l'étudiant
+  left_join(courses |> select(course_id, course), by = "course_id") |>
+  left_join(students |> select(id, group), by = "id") |>
+  select(id, group, course, avg_grade)
+```
+
+Let's use pivoting : 
+```{r}
+student_performance_wide <- avg_grades_per_course_student |>
+  pivot_wider(
+    id_cols = c(id, group),
+    names_from = course,
+    values_from = avg_grade
+  )
+student_performance_wide |>
+  slice_head(n = 5) |>
+  kable(
+    caption = "Extrait de la Performance Moyenne par Étudiant (Toutes les matières incluses)",
+    digits = 2)
+```
+### Question 20 
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# 1. Calculer les moyennes générales pour les lignes de référence
+avg_crypto <- mean(student_performance_wide$`Cryptography and Codebreaking`, na.rm = TRUE)
+avg_fashion <- mean(student_performance_wide$`Fashion Design and Textile Innovation`, na.rm = TRUE)
+
+# 2. Créer le graphique amélioré
+ggplot(student_performance_wide, 
+       aes(x = `Cryptography and Codebreaking`, 
+           y = `Fashion Design and Textile Innovation`)) + 
+  
+  # Points en bleu uni
+  geom_point(alpha = 0.7, size = 2, color = "#1f77b4") +
+  
+  # Ligne de régression
+  geom_smooth(method = "lm", se = FALSE, color = "darkgrey", linetype = "dashed", linewidth = 0.5) +
+  
+  # Ligne de l'Average Grade pour Cryptography (verticale)
+  geom_vline(xintercept = avg_crypto, color = "red", linetype = "solid", linewidth = 1) +
+  
+  # Ligne de l'Average Grade pour Fashion (horizontale)
+  geom_hline(yintercept = avg_fashion, color = "red", linetype = "solid", linewidth = 1) +
+  
+  # FIX : Définir l'échelle de 0 à 20 pour les deux axes
+  scale_x_continuous(limits = c(0, 20), breaks = seq(0, 20, 5)) +
+  scale_y_continuous(limits = c(0, 20), breaks = seq(0, 20, 5)) +
+  
+  labs(
+    title = "Relation entre les Notes Moyennes : Fashion Design vs. Cryptography",
+    subtitle = paste("Moyenne Crypto et Fashion (Ligne Rouge) :", round(avg_crypto, 2), " | ", round(avg_fashion, 2)),
+    x = "Moyenne des Notes en Cryptography and Codebreaking (sur 20)",
+    y = "Moyenne des Notes en Fashion Design and Textile Innovation (sur 20)"
+  ) +
+  theme_minimal(base_size = 14)
+```
+In this graph we have one colour per group and mainly we can see that the mean fro the course in cryptography and codebreaking is lower than the mean in Fashion design and textile innovation. 
+
+### Question 21 
+```{r}
+# Utilisation de .by pour calculer la corrélation au sein de chaque groupe
+correlation_by_group <- student_performance_wide |>
+  summarise(
+    correlation = cor(
+      `Etiquette and Social Graces`,
+      `Historical Archaeology and Antiquarian Studies`,
+      use = "complete.obs" # Gérer les NA si des étudiants n'ont aucune note dans un cours
+    ),
+    .by = group
+  ) |>
+  arrange(desc(abs(correlation))) # Trier par valeur absolue pour identifier les plus corrélés
+
+correlation_by_group |>
+  kable(
+    caption = "Corrélation entre les Notes Moyennes de deux cours, Groupe par Groupe",
+    digits = 3
+  )
+```
+In every groups there is a positive correlation between the grades in Historical Archaeology and Antiquarian Studies. However in some groupe the correlation is more important for instnace in group 16 there is an important correlation while in group 5 there is not. 
+
+### Question 22 
+```{r}
+# 1. Identifier le groupe avec la corrélation absolue la plus élevée (le premier de la table triée)
+most_correlated_group <- correlation_by_group |>
+  slice_head(n = 1) |>
+  pull(group)
+
+# 2. Filtrer le data frame pour ce groupe uniquement
+data_most_correlated <- student_performance_wide |>
+  filter(group == most_correlated_group)
+
+# 3. Créer le graphique
+ggplot(data_most_correlated, aes(x = `Historical Archaeology and Antiquarian Studies`, y = `Etiquette and Social Graces`)) +
+  geom_point(alpha = 0.8, color = "#CC6677") +
+  geom_smooth(method = "lm", se = FALSE, color = "darkred") +
+  labs(
+    title = paste("Notes Moyennes : Etiquette vs. Archaeology (Groupe", most_correlated_group, ")"),
+    subtitle = paste("Corrélation =", round(correlation_by_group$correlation[1], 3)),
+    x = "Moyenne des Notes en Historical Archaeology and Antiquarian Studies",
+    y = "Moyenne des Notes en Etiquette and Social Graces"
+  ) +
+  theme_minimal(base_size = 14)
+```
+In this group we can see a clear correlation between the grade obtain in Historical Archeology and in Etiquette and social graces. The higher the grade in one course is the higher it is in the other course. 
 
 
 
