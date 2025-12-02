@@ -131,6 +131,30 @@ ggplot(students, aes(x = age)) +
   ) +
   theme_minimal(base_size = 14)
 ```
+### Question 8 
+```{r}
+students <- students |>
+  mutate(age_years = as.numeric(Sys.Date() - birth_date) / 365.25)
+
+median_age_group <- students |>
+  group_by(group) |>
+  summarise(median_age = round(median(age_years), 1), .groups = "drop")
+
+median_age_group |> kable(
+  caption = "Median Age of Students per Group (in years, with decimals)",
+  col.names = c("Group", "Median Age (years)")
+)
+```
+### Question 9 
+```{r}
+students |>
+  group_by(group) |>
+  filter(age == max(age)) |>
+  select(ID = id, Sex = sex, Age = age) |>  # rename columns directly
+  ungroup() |>
+  arrange(desc(Age)) |> 
+  print()
+```
 
 
 
