@@ -156,7 +156,73 @@ students |>
   print()
 ```
 
+## Simple grade analysis 
+### Question 10 
+Before doing these questions, it seems more relevant to join the two files together : 
+```{r}
+grades_students <- grades |>
+  filter(!is.na(grade)) |>             # remove missing grades
+  inner_join(students, by = "id") 
+```
 
+
+
+```{r}
+n_grades <- grades_students |>
+  summarise(total = n()) |>
+  pull(total)
+
+# In order to print the sentence we do : 
+cat("The data set contains", n_grades, "grades.\n")
+```
+
+### Question 11
+```{r}
+# Compute average grade per group for Cryptography
+avg_crypto <- grades_students |>
+  left_join(courses, by = "course_id") |>      # get course names
+  filter(course == "Cryptography and Codebreaking") |>
+  group_by(group) |>
+  summarise(avg_grade = mean(grade, na.rm = TRUE), .groups = "drop")
+
+ggplot(avg_crypto, aes(x = as.factor(group), y = avg_grade, fill = as.factor(group))) +
+  geom_col() + 
+  labs(
+    title = "Average Grade in Cryptography and Codebreaking by Group",
+    x = "Group",
+    y = "Average Grade",
+    fill = "Group"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(legend.position = "none")
+
+```
+### Question 12 
+In this question we compare the distribution of all the grades per module : 
+```{r}
+library(dplyr)
+library(ggplot2)
+
+grades_modules <- grades_students |>
+  left_join(courses, by = "course_id") |>
+  filter(!is.na(grade))  # garder toutes les notes
+
+# Boxplot avec facet_wrap pour comparer Module 1 et Module 2
+ggplot(grades_modules, aes(x = as.factor(group), y = grade, fill = as.factor(group))) +
+  geom_boxplot() +
+  scale_y_continuous(limits = c(0, 20)) +  # axe 0-20 pour toutes les notes
+  labs(
+    title = "Grade Distribution by Module and Group",
+    x = "Group",
+    y = "Grade",
+    fill = "Group"
+  ) +
+  facet_wrap(~ module, nrow = 1) +  # un facet par module, côte à côte
+  theme_minimal(base_size = 14) +
+  theme(legend.position = "none")
+
+```
+### Question 13 
 
 
 
