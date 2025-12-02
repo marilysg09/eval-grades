@@ -37,6 +37,28 @@ courses |>
   )
 ```
 
+### Question 3
+
+```{r}
+names(students)
+```
+
+```{r}
+students <- vroom(here("data", "students.csv"))
+students |>
+  mutate(
+    id = as.integer(id),          # recommended in the instructions
+    group = as.factor(group),     # recommended in the instructions
+    birth_date = as.Date(birth_date),  # must be Date
+    sex = as.factor(sex)               # must be factor
+  )
+```
+```{r}
+str(students)
+
+```
+
+
 
 ## Quarto
 
